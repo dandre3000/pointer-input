@@ -1,0 +1,39 @@
+{
+  "name": "@dandre3000/pointer-observer",
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": {
+    "name": "DeAundre Payne",
+    "email": "apps.fondling796@passinbox.com",
+    "url": "https://github.com/dandre3000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dandre3000/pointer-observer.git"
+  },
+  "description": "Query pointer state and use pointer events asynchronously.",
+  "keywords": [
+    "pointer",
+    "mouse",
+    "touch",
+    "input",
+    "browser"
+  ],
+  "files": [
+    "./build"
+  ],
+  "exports": {
+    "types": "./build/index.d.ts",
+    "import": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && bun build --entrypoints ./index.ts --outdir ./build --minify-whitespace --minify-syntax",
+    "prepack": "bun run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@dandre3000/dereference-registry": "^0.2.0"
+  }
+}

@@ -1,0 +1,9 @@
+/node_modules/
+/build/
+ignore/
+server.ts
+index.html
+package-lock.json
+bun.lock
+deno.lock
+dandre3000-pointer-observer*.tgz
