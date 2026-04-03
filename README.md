@@ -26,6 +26,12 @@ setInterval(() => {
 ### Types
 
 <h4>
+    MouseEventTypes =</br>
+        &emsp;'dblclick' |</br>
+        &emsp;'wheel'
+</h4>
+
+<h4>
     PointerEventTypes =</br>
         &emsp;"pointerenter" |</br>
         &emsp;"pointerover" |</br>
@@ -36,12 +42,6 @@ setInterval(() => {
         &emsp;"pointerleave" |</br>
         &emsp;"click" |</br>
         &emsp;"auxclick"
-</h4>
-
-<h4>
-    MouseEventTypes =</br>
-        &emsp;'dblclick' |</br>
-        &emsp;'wheel'
 </h4>
 
 <h4>
@@ -75,7 +75,7 @@ setInterval(() => {
 
 #### getAllPinters (): Map&lt;number, Pointer&gt;
 
-#### getNextEvent (type: string): Promise&lt;MouseEvent | PointerEvent&gt;
+#### getNextEvent (type: MouseEventTypes | PointerEventTypes): Promise&lt;MouseEvent | PointerEvent&gt;
 
 ## License
 
