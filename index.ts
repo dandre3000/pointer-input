@@ -30,13 +30,12 @@ export class PointerInput {
         if (event instanceof PointerEvent) {
             const { type, pointerId } = event
 
-            if (type === 'pointerenter' || type === 'pointerleave')
-                return
-            else if (type === 'pointerout') {
+            if (type === 'pointerleave' || type === 'pointerout') {
                 return this.pointers.delete(pointerId)
             }
 
             const {
+                target,
                 pointerType,
                 buttons,
                 screenX,
@@ -54,14 +53,14 @@ export class PointerInput {
 
             const pointer = this.pointers.get(pointerId)
 
+            if (target !== this.element) {
+                const { left, top } = this.element.getBoundingClientRect()
+
+                offsetX = clientX - left
+                offsetY = clientY - top
+            }
+
             if (!pointer) {
-                if (type === 'pointerover') {
-                    const { left, top } = this.element.getBoundingClientRect()
-
-                    offsetX = clientX - left
-                    offsetY = clientY - top
-                }
-
                 this.pointers.set(pointerId, {
                     type: pointerType,
                     button1: (buttons & 1) === 1,
@@ -79,8 +78,6 @@ export class PointerInput {
                     offsetY: offsetY
                 })
             } else {
-                if (type === 'pointerover') return
-
                 pointer.type = pointerType
                 pointer.button1 = (buttons & 1) === 1
                 pointer.button2 = (buttons & 2) === 2
