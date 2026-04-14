@@ -25,7 +25,7 @@ setInterval(() => {
 
 <h4>
     Pointer {</br>
-        &emsp;type: strng</br>
+        &emsp;type: string</br>
         &emsp;button1: boolean</br>
         &emsp;button2: boolean</br>
         &emsp;button3: boolean</br>
