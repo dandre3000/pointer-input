@@ -1,5 +1,5 @@
 {
-  "name": "@dandre3000/pointer-observer",
+  "name": "@dandre3000/pointer-input",
   "version": "0.1.0",
   "license": "MIT",
   "author": {
@@ -9,9 +9,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dandre3000/pointer-observer.git"
+    "url": "git+https://github.com/dandre3000/pointer-input.git"
   },
-  "description": "Query pointer state and use pointer events asynchronously.",
+  "description": "Query pointer state.",
   "keywords": [
     "pointer",
     "mouse",
@@ -33,7 +33,5 @@
   "devDependencies": {
     "typescript": "^5.9.3"
   },
-  "dependencies": {
-    "@dandre3000/dereference-registry": "^0.2.0"
-  }
+  "type": "module"
 }

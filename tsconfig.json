@@ -8,6 +8,6 @@
         "declaration": true,
         "declarationDir": "build",
         "emitDeclarationOnly": true,
-        "skipLibCheck": true
+        "noCheck": true
     }
 }

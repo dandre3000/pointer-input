@@ -1,19 +1,17 @@
-# pointer-observer
+# pointer-input
 
-Query pointer state and use pointer events asynchronously.
+Query pointer state.
 
 ## Installation
 
-npm i @dandre3000/pointer-observer
+npm i @dandre3000/pointer-input
 
 ## Usage
 
 ```js
-import PointerObserver from '@dandre3000/pointer-observer'
+import PointerInput from '@dandre3000/pointer-input'
 
-let p = new PointerObserver(document.documentElement)
-
-await p.getNextEvent('pointerdown').then(e => console.log(e))
+let p = new PointerInput(document.documentElement)
 
 setInterval(() => {
     console.log(p.getPointers(0))
@@ -24,25 +22,6 @@ setInterval(() => {
 ## Exports
 
 ### Types
-
-<h4>
-    MouseEventTypes =</br>
-        &emsp;'dblclick' |</br>
-        &emsp;'wheel'
-</h4>
-
-<h4>
-    PointerEventTypes =</br>
-        &emsp;"pointerenter" |</br>
-        &emsp;"pointerover" |</br>
-        &emsp;"pointermove" |</br>
-        &emsp;"pointerdown" |</br>
-        &emsp;"pointerup" |</br>
-        &emsp;"pointerout" |</br>
-        &emsp;"pointerleave" |</br>
-        &emsp;"click" |</br>
-        &emsp;"auxclick"
-</h4>
 
 <h4>
     Pointer {</br>
@@ -62,7 +41,7 @@ setInterval(() => {
     }
 </h4>
 
-### Class PointerObserver
+### Class PointerInput
 
 #### constructor (eventTarget: EventTarget)
 
@@ -73,10 +52,8 @@ setInterval(() => {
     getPointers (...pointerIds: string[]): Pointer[]
 </h4>
 
-#### getAllPinters (): Map&lt;number, Pointer&gt;
-
-#### getNextEvent (type: MouseEventTypes | PointerEventTypes): Promise&lt;MouseEvent | PointerEvent&gt;
+#### getPointerMap (): Map&lt;number, Pointer&gt;
 
 ## License
 
-[MIT](https://github.com/dandre3000/pointer-observer/blob/main/LICENSE)
+[MIT](https://github.com/dandre3000/pointer-input/blob/main/LICENSE)
