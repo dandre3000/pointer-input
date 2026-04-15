@@ -27,74 +27,75 @@ export class PointerInput {
     #data: ElementData
 
     static #listener (this: ElementData, event: PointerEvent) {
-        if (event instanceof PointerEvent) {
-            eventSet.add(this)
+        if (eventSet.has(event) || !(event instanceof PointerEvent)) return
 
-            const { type, pointerId } = event
+        eventSet.add(event) // skip if event.stopImmediatePropagation is called after this listener
 
-            if (type === 'pointerleave' || type === 'pointerout') {
-                return this.pointers.delete(pointerId)
-            }
+        const { type, pointerId } = event
 
-            const {
-                target,
-                pointerType,
-                buttons,
-                screenX,
-                screenY,
-                clientX,
-                clientY,
-                pageX,
-                pageY
-            } = event
+        if (type === 'pointerleave' || type === 'pointerout') {
+            return this.pointers.delete(pointerId)
+        }
 
-            let {
-                offsetX,
-                offsetY
-            } = event
+        const {
+            target,
+            pointerType,
+            buttons,
+            screenX,
+            screenY,
+            clientX,
+            clientY,
+            pageX,
+            pageY
+        } = event
 
-            const pointer = this.pointers.get(pointerId)
+        let {
+            offsetX,
+            offsetY
+        } = event
 
-            if (target !== this.element) {
-                const { left, top } = this.element.getBoundingClientRect()
+        const pointer = this.pointers.get(pointerId)
 
-                offsetX = clientX - left
-                offsetY = clientY - top
-            }
+        // event target may be a nested element
+        if (target !== this.element) {
+            const { left, top } = this.element.getBoundingClientRect()
 
-            if (!pointer) {
-                this.pointers.set(pointerId, {
-                    type: pointerType,
-                    button1: (buttons & 1) === 1,
-                    button2: (buttons & 2) === 2,
-                    button3: (buttons & 4) === 4,
-                    button4: (buttons & 8) === 8,
-                    button5: (buttons & 16) === 16,
-                    screenX: screenX,
-                    screenY: screenY,
-                    clientX: clientX,
-                    clientY: clientY,
-                    pageX: pageX,
-                    pageY: pageY,
-                    offsetX: offsetX,
-                    offsetY: offsetY
-                })
-            } else {
-                pointer.type = pointerType
-                pointer.button1 = (buttons & 1) === 1
-                pointer.button2 = (buttons & 2) === 2
-                pointer.button3 = (buttons & 4) === 4
-                pointer.button4 = (buttons & 8) === 8
-                pointer.button5 = (buttons & 16) === 16
-                pointer.screenX = screenX
-                pointer.screenY = screenY
-                pointer.clientX = clientX
-                pointer.clientY = clientY
-                pointer.pageX = pageX
-                pointer.pageY = pageY
-                pointer.offsetX = offsetX
-                pointer.offsetY = offsetY
-            }
+            offsetX = clientX - left
+            offsetY = clientY - top
+        }
+
+        if (!pointer) {
+            this.pointers.set(pointerId, {
+                type: pointerType,
+                button1: (buttons & 1) === 1,
+                button2: (buttons & 2) === 2,
+                button3: (buttons & 4) === 4,
+                button4: (buttons & 8) === 8,
+                button5: (buttons & 16) === 16,
+                screenX: screenX,
+                screenY: screenY,
+                clientX: clientX,
+                clientY: clientY,
+                pageX: pageX,
+                pageY: pageY,
+                offsetX: offsetX,
+                offsetY: offsetY
+            })
+        } else {
+            pointer.type = pointerType
+            pointer.button1 = (buttons & 1) === 1
+            pointer.button2 = (buttons & 2) === 2
+            pointer.button3 = (buttons & 4) === 4
+            pointer.button4 = (buttons & 8) === 8
+            pointer.button5 = (buttons & 16) === 16
+            pointer.screenX = screenX
+            pointer.screenY = screenY
+            pointer.clientX = clientX
+            pointer.clientY = clientY
+            pointer.pageX = pageX
+            pointer.pageY = pageY
+            pointer.offsetX = offsetX
+            pointer.offsetY = offsetY
         }
     }
 
@@ -103,10 +104,6 @@ export class PointerInput {
 
         return function (this: Event) {
             stopImmediatePropagation.call(this)
-
-            if (eventSet.has(this)) return
-
-            eventSet.add(this)
             PointerInput.#listener(this)
         }
     }

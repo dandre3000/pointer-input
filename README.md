@@ -46,6 +46,10 @@ setInterval(() => {
 
 #### constructor (eventTarget: EventTarget)
 
+### Static methods
+
+#### patchEventStopImmediatePropagation (): void
+
 ### Instance methods
 
 <h4>
