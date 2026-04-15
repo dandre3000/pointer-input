@@ -1,8 +1,8 @@
-/node_modules/
-/build/
-ignore/
 server.ts
 index.html
+/node_modules/
+/build/
+/ignore/
 package-lock.json
 bun.lock
 deno.lock

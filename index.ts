@@ -15,21 +15,19 @@ export interface Pointer {
     offsetY: number
 }
 
-interface ElementData extends EventListenerObject {
-    element: Element
+interface EventTargetData extends EventListenerObject {
+    target: EventTarget
     pointers: Map<number, Pointer>
 }
 
-const elementDataMap: WeakMap<Element, ElementData> = new WeakMap
+const targetDataMap: WeakMap<EventTarget, EventTargetData> = new WeakMap
 const eventSet: WeakSet<Event> = new WeakSet
 
 export class PointerInput {
-    #data: ElementData
+    #data: EventTargetData
 
-    static #listener (this: ElementData, event: PointerEvent) {
-        if (eventSet.has(event) || !(event instanceof PointerEvent)) return
-
-        eventSet.add(event) // skip if event.stopImmediatePropagation is called after this listener
+    static #listener (this: EventTargetData, event: PointerEvent) {
+        eventSet.add(event) // skip if patched event.stopImmediatePropagation is called after this listener
 
         const { type, pointerId } = event
 
@@ -57,8 +55,8 @@ export class PointerInput {
         const pointer = this.pointers.get(pointerId)
 
         // event target may be a nested element
-        if (target !== this.element) {
-            const { left, top } = this.element.getBoundingClientRect()
+        if (target !== this.target) {
+            const { left, top } = this.target.getBoundingClientRect()
 
             offsetX = clientX - left
             offsetY = clientY - top
@@ -104,32 +102,33 @@ export class PointerInput {
 
         return function (this: Event) {
             stopImmediatePropagation.call(this)
-            PointerInput.#listener(this)
+
+            if (!eventSet.has(event) && event instanceof PointerEvent) PointerInput.#listener(this)
         }
     }
 
-    constructor (element: Element) {
-        let elementData = elementDataMap.get(element)
+    constructor (target: EventTarget) {
+        let targetData = targetDataMap.get(target)
 
-        if (!elementData) {
-            elementData = {
-                element,
+        if (!targetData) {
+            targetDataMap.set(target, targetData = {
+                target,
                 pointers: new Map,
                 handleEvent: PointerInput.#listener
-            }
+            })
 
-            element.addEventListener('pointerenter', elementData, true)
-            element.addEventListener('pointerover', elementData, true)
-            element.addEventListener('pointermove', elementData, true)
-            element.addEventListener('pointerdown', elementData, true)
-            element.addEventListener('pointerup', elementData, true)
-            element.addEventListener('pointerout', elementData, true)
-            element.addEventListener('pointerleave', elementData, true)
-            element.addEventListener('click', elementData, true)
-            element.addEventListener('auxclick', elementData, true)
+            target.addEventListener('pointerenter', targetData, true)
+            target.addEventListener('pointerover', targetData, true)
+            target.addEventListener('pointermove', targetData, true)
+            target.addEventListener('pointerdown', targetData, true)
+            target.addEventListener('pointerup', targetData, true)
+            target.addEventListener('pointerout', targetData, true)
+            target.addEventListener('pointerleave', targetData, true)
+            target.addEventListener('click', targetData, true)
+            target.addEventListener('auxclick', targetData, true)
         }
 
-        this.#data = elementData
+        this.#data = targetData
     }
 
     getPointers <T extends number[]>(...pointerIds: T): T['length'] extends 1 ? Pointer : Pointer[] {
