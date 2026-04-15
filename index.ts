@@ -21,7 +21,7 @@ interface ElementData extends EventListenerObject {
 }
 
 const elementDataMap: WeakMap<Element, ElementData> = new WeakMap
-const eventSet: WeakSet<Event>
+const eventSet: WeakSet<Event> = new WeakSet
 
 export class PointerInput {
     #data: ElementData
