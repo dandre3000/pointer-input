@@ -15,19 +15,21 @@ export interface Pointer {
     offsetY: number
 }
 
-interface PointerInputData extends EventListenerObject {
-    symbol: symbol
+interface ElementData extends EventListenerObject {
     element: Element
     pointers: Map<number, Pointer>
 }
 
+const elementDataMap: WeakMap<Element, ElementData> = new WeakMap
+const eventSet: WeakSet<Event>
+
 export class PointerInput {
-    static #symbol = Symbol()
+    #data: ElementData
 
-    #data: PointerInputData
-
-    static #listener (this: PointerInputData, event: PointerEvent) {
+    static #listener (this: ElementData, event: PointerEvent) {
         if (event instanceof PointerEvent) {
+            eventSet.add(this)
+
             const { type, pointerId } = event
 
             if (type === 'pointerleave' || type === 'pointerout') {
@@ -96,42 +98,78 @@ export class PointerInput {
         }
     }
 
+    static patchEventStopImmediatePropagation () {
+        const stopImmediatePropagation = Event.prototype.stopImmediatePropagation
+
+        return function (this: Event) {
+            stopImmediatePropagation.call(this)
+
+            if (eventSet.has(this)) return
+
+            eventSet.add(this)
+            PointerInput.#listener(this)
+        }
+    }
+
     constructor (element: Element) {
-        this.#data = {
-            symbol: PointerInput.#symbol,
-            element,
-            pointers: new Map,
-            handleEvent: PointerInput.#listener
+        let elementData = elementDataMap.get(element)
+
+        if (!elementData) {
+            elementData = {
+                element,
+                pointers: new Map,
+                handleEvent: PointerInput.#listener
+            }
+
+            element.addEventListener('pointerenter', elementData, true)
+            element.addEventListener('pointerover', elementData, true)
+            element.addEventListener('pointermove', elementData, true)
+            element.addEventListener('pointerdown', elementData, true)
+            element.addEventListener('pointerup', elementData, true)
+            element.addEventListener('pointerout', elementData, true)
+            element.addEventListener('pointerleave', elementData, true)
+            element.addEventListener('click', elementData, true)
+            element.addEventListener('auxclick', elementData, true)
         }
 
-        element.addEventListener('pointerenter', this.#data, true)
-        element.addEventListener('pointerover', this.#data, true)
-        element.addEventListener('pointermove', this.#data, true)
-        element.addEventListener('pointerdown', this.#data, true)
-        element.addEventListener('pointerup', this.#data, true)
-        element.addEventListener('pointerout', this.#data, true)
-        element.addEventListener('pointerleave', this.#data, true)
-        element.addEventListener('click', this.#data, true)
-        element.addEventListener('auxclick', this.#data, true)
+        this.#data = elementData
     }
 
     getPointers <T extends number[]>(...pointerIds: T): T['length'] extends 1 ? Pointer : Pointer[] {
-        if (this.#data?.symbol !== PointerInput.#symbol)
+        if (this.#data?.handleEvent !== PointerInput.#listener)
             throw TypeError(`this (${Object.prototype.toString.call(this)}) is not a PointerInput instance`)
 
-        if (pointerIds.length === 1) return this.#data.pointers.get(Number(pointerIds[0])) as any
+        let pointer: Pointer
+
+        if (pointerIds.length === 1) {
+            pointer = this.#data.pointers.get(Number(pointerIds[0]))
+
+            if (pointer)
+                pointer = { ...pointer }
+            else
+                pointer = null
+
+            return pointer
+        }
 
         const pointers: Pointer[] = []
 
         for (let i = 0; i < pointerIds.length; i++) {
-            pointers.push(this.#data.pointers.get(Number(pointerIds[i])) || null)
+            pointer = this.#data.pointers.get(Number(pointerIds[i]))
+
+            if (pointer)
+                pointer = { ...pointer }
+            else
+                pointer = null
+
+            pointers.push(pointer)
         }
 
         return pointers as any
     }
 
     getPointerMap () {
-        if (this.#data?.symbol !== PointerInput.#symbol)
+        if (this.#data?.handleEvent !== PointerInput.#listener)
             throw new TypeError(`this (${Object.prototype.toString.call(this)}) is not a PointerInput instance`)
 
         const pointers: Map<number, Pointer> = new Map
