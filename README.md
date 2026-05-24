@@ -39,6 +39,8 @@ setInterval(() => {
         &emsp;pageY: number</br>
         &emsp;offsetX: number</br>
         &emsp;offsetY: number</br>
+        &emsp;movementX: number</br>
+        &emsp;movementY: number</br>
     }
 </h4>
 
