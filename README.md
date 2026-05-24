@@ -15,7 +15,7 @@ let p = new PointerInput(document.documentElement)
 
 setInterval(() => {
     console.log(p.getPointers(0))
-    console.log(p.getAllPointers())
+    console.log(p.getPointerMap())
 }, 1000 / 60)
 ```
 
@@ -53,8 +53,8 @@ setInterval(() => {
 ### Instance methods
 
 <h4>
-    getPointers (pointerId: string): Pointer</br>
-    getPointers (...pointerIds: string[]): Pointer[]
+    getPointers (pointerId: string): Pointer | null</br>
+    getPointers (...pointerIds: string[]): (Pointer | null)[]
 </h4>
 
 #### getPointerMap (): Map&lt;number, Pointer&gt;
