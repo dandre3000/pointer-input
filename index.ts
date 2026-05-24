@@ -13,26 +13,55 @@ export interface Pointer {
     pageY: number
     offsetX: number
     offsetY: number
+    movementX: number
+    movementY: number
 }
 
-interface EventTargetData extends EventListenerObject {
-    target: EventTarget
+interface ElementData extends EventListenerObject {
+    instanceCount: number
+    movingTimeoutId: number
+    element: Element
     pointers: Map<number, Pointer>
+    movingPointers: Map<Pointer, number>
+    updateMovingPointers: () => void
 }
 
-const targetDataMap: WeakMap<EventTarget, EventTargetData> = new WeakMap
+const elementDataMap: WeakMap<Element, ElementData> = new WeakMap
 const eventSet: WeakSet<Event> = new WeakSet
 
-export class PointerInput {
-    #data: EventTargetData
+const registry = new FinalizationRegistry((elementData: ElementData) => {
+    const { element, movingTimeoutId, movingPointers, pointers } = elementData
 
-    static #listener (this: EventTargetData, event: PointerEvent) {
+    if (--elementData.instanceCount <= 0) {
+        element.removeEventListener('pointerenter', elementData, true)
+        element.removeEventListener('pointerover', elementData, true)
+        element.removeEventListener('pointermove', elementData, true)
+        element.removeEventListener('pointerdown', elementData, true)
+        element.removeEventListener('pointerup', elementData, true)
+        element.removeEventListener('pointerout', elementData, true)
+        element.removeEventListener('pointerleave', elementData, true)
+        element.removeEventListener('click', elementData, true)
+        element.removeEventListener('auxclick', elementData, true)
+
+        elementData.element = undefined as any
+        elementData.updateMovingPointers = undefined as any
+        elementData.handleEvent = undefined as any
+
+        pointers.clear()
+        movingPointers.clear()
+        cancelAnimationFrame(movingTimeoutId)
+    }
+})
+
+export class PointerInput {
+    static #listener (this: ElementData, event: PointerEvent) {
         eventSet.add(event) // skip if patched event.stopImmediatePropagation is called after this listener
 
+        const { element, pointers } = this
         const { type, pointerId } = event
 
         if (type === 'pointerleave' || type === 'pointerout') {
-            return this.pointers.delete(pointerId)
+            return pointers.delete(pointerId)
         }
 
         const {
@@ -44,7 +73,9 @@ export class PointerInput {
             clientX,
             clientY,
             pageX,
-            pageY
+            pageY,
+            movementX,
+            movementY
         } = event
 
         let {
@@ -52,18 +83,18 @@ export class PointerInput {
             offsetY
         } = event
 
-        const pointer = this.pointers.get(pointerId)
+        const pointer = pointers.get(pointerId) as Pointer
 
-        // event target may be a nested element
-        if (target !== this.target) {
-            const { left, top } = this.target.getBoundingClientRect()
+        // event target element may be nested
+        if (target !== element) {
+            const { left, top } = (target as Element).getBoundingClientRect()
 
             offsetX = clientX - left
             offsetY = clientY - top
         }
 
         if (!pointer) {
-            this.pointers.set(pointerId, {
+            pointers.set(pointerId, {
                 type: pointerType,
                 button1: (buttons & 1) === 1,
                 button2: (buttons & 2) === 2,
@@ -76,8 +107,10 @@ export class PointerInput {
                 clientY: clientY,
                 pageX: pageX,
                 pageY: pageY,
-                offsetX: offsetX,
-                offsetY: offsetY
+                offsetX,
+                offsetY,
+                movementX,
+                movementY
             })
         } else {
             pointer.type = pointerType
@@ -94,6 +127,15 @@ export class PointerInput {
             pointer.pageY = pageY
             pointer.offsetX = offsetX
             pointer.offsetY = offsetY
+            pointer.movementX = movementX
+            pointer.movementY = movementY
+        }
+
+        if (type === 'pointermove') {
+            this.movingPointers.set(pointer, 0)
+
+            if (!this.movingTimeoutId)
+                this.movingTimeoutId = requestAnimationFrame(this.updateMovingPointers)
         }
     }
 
@@ -103,65 +145,93 @@ export class PointerInput {
         return function (this: Event) {
             stopImmediatePropagation.call(this)
 
-            if (!eventSet.has(event) && event instanceof PointerEvent) PointerInput.#listener(this)
+            if (!eventSet.has(this) && this instanceof PointerEvent) PointerInput.#listener.call(elementDataMap.get(this.currentTarget as Element) as ElementData, this)
         }
     }
 
-    constructor (target: EventTarget) {
-        let targetData = targetDataMap.get(target)
+    #data: ElementData
 
-        if (!targetData) {
-            targetDataMap.set(target, targetData = {
-                target,
+    constructor (element: Element) {
+        if (!(element instanceof Element))
+            throw new TypeError(`Argument element (${Object.prototype.toString.call(element)}) is not an Element instance.`)
+
+        let elementData = elementDataMap.get(element) as ElementData
+
+        if (!elementData) {
+            elementDataMap.set(element, elementData = {
+                instanceCount: 0,
+                movingTimeoutId: NaN,
+                element,
                 pointers: new Map,
+                movingPointers: new Map,
+                updateMovingPointers: () => {
+                    for (const [pointer, count] of elementData.movingPointers) {
+                        if (count === 0)
+                            elementData.movingPointers.set(pointer, 1)
+                        else {
+                            elementData.movingPointers.delete(pointer)
+                            pointer.movementX = 0
+                            pointer.movementY = 0
+                        }
+                    }
+
+                    if (elementData.movingPointers.size > 0)
+                        elementData.movingTimeoutId = requestAnimationFrame(elementData.updateMovingPointers)
+                    else
+                        elementData.movingTimeoutId = NaN
+                },
                 handleEvent: PointerInput.#listener
             })
 
-            target.addEventListener('pointerenter', targetData, true)
-            target.addEventListener('pointerover', targetData, true)
-            target.addEventListener('pointermove', targetData, true)
-            target.addEventListener('pointerdown', targetData, true)
-            target.addEventListener('pointerup', targetData, true)
-            target.addEventListener('pointerout', targetData, true)
-            target.addEventListener('pointerleave', targetData, true)
-            target.addEventListener('click', targetData, true)
-            target.addEventListener('auxclick', targetData, true)
+            element.addEventListener('pointerenter', elementData, true)
+            element.addEventListener('pointerover', elementData, true)
+            element.addEventListener('pointermove', elementData, true)
+            element.addEventListener('pointerdown', elementData, true)
+            element.addEventListener('pointerup', elementData, true)
+            element.addEventListener('pointerout', elementData, true)
+            element.addEventListener('pointerleave', elementData, true)
+            element.addEventListener('click', elementData, true)
+            element.addEventListener('auxclick', elementData, true)
         }
 
-        this.#data = targetData
+        elementData.instanceCount++
+        this.#data = elementData
+        registry.register(this, elementData)
     }
 
-    getPointers <T extends number[]>(...pointerIds: T): T['length'] extends 1 ? Pointer : Pointer[] {
-        if (this.#data?.handleEvent !== PointerInput.#listener)
+    getPointers <T extends number[]>(...pointerIds: T): T['length'] extends 1 ? (Pointer | null ): (Pointer | null)[] {
+        const { handleEvent, pointers } = this.#data
+
+        if (handleEvent !== PointerInput.#listener)
             throw TypeError(`this (${Object.prototype.toString.call(this)}) is not a PointerInput instance`)
 
-        let pointer: Pointer
+        let pointer: Pointer | null
 
         if (pointerIds.length === 1) {
-            pointer = this.#data.pointers.get(Number(pointerIds[0]))
+            pointer = pointers.get(Number(pointerIds[0])) as Pointer
 
             if (pointer)
                 pointer = { ...pointer }
             else
                 pointer = null
 
-            return pointer
+            return pointer as any
         }
 
-        const pointers: Pointer[] = []
+        const pointerArray: (Pointer | null)[] = []
 
         for (let i = 0; i < pointerIds.length; i++) {
-            pointer = this.#data.pointers.get(Number(pointerIds[i]))
+            pointer = pointers.get(Number(pointerIds[i])) as Pointer
 
             if (pointer)
                 pointer = { ...pointer }
             else
                 pointer = null
 
-            pointers.push(pointer)
+            pointerArray.push(pointer)
         }
 
-        return pointers as any
+        return pointerArray as any
     }
 
     getPointerMap () {
